@@ -1,0 +1,15 @@
+{
+    "recommendations": [
+        "ms-python.python",
+        // Code formatting
+        // > Formatting is much more responsive using this (black-formatter) extension
+        // https://black.readthedocs.io/en/stable/integrations/editors.html#visual-studio-code
+        "ms-python.black-formatter",
+        // Linting
+        "ms-python.flake8",
+        // Refactoring
+        "ms-python.isort",
+        // Type checking
+        "ms-python.mypy-type-checker",
+    ]
+}

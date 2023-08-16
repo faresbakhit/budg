@@ -1,0 +1,13 @@
+{
+    "black-formatter.importStrategy": "fromEnvironment",
+    "flake8.importStrategy": "fromEnvironment",
+    "isort.importStrategy": "fromEnvironment",
+    "mypy-type-checker.importStrategy": "fromEnvironment",
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": true
+        },
+    }
+}
