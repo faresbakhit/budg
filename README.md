@@ -1,6 +1,6 @@
 # Budg
 
-The Modern, Extensible Static Site Generator
+The Modern and Extensible Static Site Generator
 
 ## Development Mode
 
