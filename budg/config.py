@@ -9,15 +9,15 @@ __all__ = [
     "BudgDirectoriesConfig",
 ]
 
-dataclass = dataclass(frozen=True, slots=True)
+dataclass = dataclass(frozen=True, kw_only=True, slots=True)
 
 
 @dataclass
 class BudgDirectoriesConfig:
-    templates: str = "layouts"
-    sources: str = "content"
-    statics: str = "public"
-    build: str = "dist"
+    templates: str = "./layouts"
+    sources: str = "./content"
+    statics: str = "./public"
+    build: str = "./dist"
 
 
 @dataclass

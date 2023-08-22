@@ -1,5 +1,5 @@
-[options.directories]
-layouts = "./layouts"
-pages = "./pages"
-public = "./public"
+[budg.directories]
+templates = "./layouts"
+sources = "./content"
+statics = "./public"
 build = "./dist"

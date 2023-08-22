@@ -12,4 +12,5 @@ def build(ctx: click.Context) -> None:
     config = ctx.find_object(BaseConfig)
     if config is None:
         raise click.ClickException("Context not initialized")
-    raise NotImplementedError
+    print(config)
+    # raise NotImplementedError
