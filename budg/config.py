@@ -6,23 +6,20 @@ __all__ = [
     "config_from_dict",
     "BaseConfig",
     "BudgConfig",
-    "BudgDirectoriesConfig",
 ]
 
 dataclass = dataclass(frozen=True, kw_only=True, slots=True)
 
 
 @dataclass
-class BudgDirectoriesConfig:
-    templates: str = "./layouts"
-    sources: str = "./content"
-    statics: str = "./public"
-    build: str = "./dist"
+class BudgRule:
+    pass
 
 
 @dataclass
 class BudgConfig:
-    directories: BudgDirectoriesConfig = field(default_factory=BudgDirectoriesConfig)
+    directories: dict[str, str] = field(default_factory=dict)
+    rules: list[BudgRule] = field(default_factory=list)
 
 
 @dataclass

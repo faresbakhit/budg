@@ -5,7 +5,7 @@ from budg.config import BaseConfig
 __all__ = ["build"]
 
 
-@click.command()
+@click.command
 @click.pass_context
 def build(ctx: click.Context) -> None:
     """Compile a static site as defined by a config file"""

@@ -3,3 +3,8 @@ templates = "./layouts"
 sources = "./content"
 statics = "./public"
 build = "./dist"
+
+[[budg.rules]]
+a = 3
+b = 4
+
