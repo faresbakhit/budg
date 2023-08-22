@@ -2,4 +2,4 @@
 layouts = "./layouts"
 pages = "./pages"
 public = "./public"
-build = "./dista"
+build = "./dist"
