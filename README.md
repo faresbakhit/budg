@@ -10,5 +10,5 @@ Create a [virtual environment](https://docs.python.org/3/glossary.html#term-virt
 $ python -m venv .venv
 $ # check the `venv` docs for instructions on how to
 $ # activate the environment in your platform/shell
-$ pip install --editable .[dev]
+$ pip install -e .[dev]
 ```
