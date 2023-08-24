@@ -1,7 +1,12 @@
 {
     "budg": {
-        "directories": {
-            "asd": "adsdsa"
-        }
+        "directories": {},
+        "plugins": [
+            {}
+        ],
+        "rules": [
+            {},
+            {}
+        ]
     }
 }

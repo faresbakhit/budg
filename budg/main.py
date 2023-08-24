@@ -1,9 +1,9 @@
-from typing import NoReturn, Sequence
+import typing as t
 
 
-def main(args: Sequence[str] | None = None) -> NoReturn:
+def main(args: t.Sequence[str] | None = None) -> t.NoReturn:
     from budg import cmd
 
     cmd.budg.add_command(cmd.build)
     cmd.budg.add_command(cmd.serve)
-    cmd.budg.main(args, prog_name=__package__)
+    cmd.budg.main(args, prog_name="Budg")

@@ -1,7 +1,5 @@
 import click
 
-__all__ = ["serve"]
-
 
 @click.command()
 def serve() -> None:

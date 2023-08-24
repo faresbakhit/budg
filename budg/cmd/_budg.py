@@ -1,13 +1,24 @@
-import json
+import os
 import platform
-import tomllib
-from pathlib import Path
+import typing as t
 
 import click
 
-from budg import __version__ as version
-from budg.config import BaseConfig, config_from_dict
+from budg import VERSION
+from budg.config import BaseConfig
+from budg.utils.dataclassfromdict import DataclassFromDictError, dataclass_from_dict
+from budg.utils.decoder import Decoder, DecoderError, JSONDecoder, TOMLDecoder
 
+AVAILABLE_CONFIG_DECODERS: dict[str, type[Decoder]] = {
+    decoder.name: decoder
+    for decoder in [
+        TOMLDecoder,
+        JSONDecoder,
+    ]
+}
+CONFIG_PATH_TEMPLATE = "./config{ext}"
+DEFAULT_CONFIG_PATH = "./config.toml"
+DEFAULT_CONFIG_DECODER = TOMLDecoder
 VERSION_INFO_MESSAGE = "%(prog)s %(version)s ({} {}) [{}-{}]".format(
     platform.python_implementation(),
     platform.python_version(),
@@ -16,44 +27,61 @@ VERSION_INFO_MESSAGE = "%(prog)s %(version)s ({} {}) [{}-{}]".format(
 )
 
 
+def determine_config() -> tuple[str, type[Decoder]]:
+    for decoder in AVAILABLE_CONFIG_DECODERS.values():
+        for ext in decoder.extensions:
+            config_path = CONFIG_PATH_TEMPLATE.format(ext=ext)
+            if os.path.exists(config_path):
+                return config_path, decoder
+    return (DEFAULT_CONFIG_PATH, DEFAULT_CONFIG_DECODER)
+
+
 @click.group(chain=True)
-@click.version_option(version, message=VERSION_INFO_MESSAGE)
+@click.version_option(VERSION, message=VERSION_INFO_MESSAGE)
 @click.option(
     "--config",
     default=None,
-    type=click.Path(
-        exists=True,
-        dir_okay=False,
-        readable=True,
-        allow_dash=True,
-        path_type=Path,
-    ),
-    help="Site configurations file.  [default: ./config.toml]",
+    type=click.Path(allow_dash=True),
+    help=f"Site configurations file.  [default: {DEFAULT_CONFIG_PATH}]",
+)
+@click.option(
+    "--config-format",
+    default=None,
+    type=click.Choice([*AVAILABLE_CONFIG_DECODERS], case_sensitive=False),
+    help=f"Site configurations file format. [default: {DEFAULT_CONFIG_DECODER.name}]",
 )
 @click.pass_context
-def budg(ctx: click.Context, config: Path | None = None) -> None:
+def budg(ctx: click.Context, config: str | None = None, config_format: str | None = None) -> None:
     """The Modern and Extensible Static Site Generator"""
-    loader = tomllib.load
-    decoder_exc = tomllib.TOMLDecodeError
+
+    guess_format = True
+    decoder = DEFAULT_CONFIG_DECODER
+
+    if config_format is not None:
+        guess_format = False
+        decoder = AVAILABLE_CONFIG_DECODERS[config_format]
+        if config is None:
+            config = CONFIG_PATH_TEMPLATE.format(ext=decoder.extensions[0])
 
     if config is None:
-        config = Path("./config.toml")
-        json_config = Path("./config.json")
-        if not config.exists() and json_config.exists():
-            config = json_config
+        guess_format = False
+        config, decoder = determine_config()
 
-    if config.suffix == ".json":
-        loader = json.load
-        decoder_exc = json.JSONDecodeError
-
-    config_file = str(config)
+    if guess_format:
+        for format in AVAILABLE_CONFIG_DECODERS.values():
+            if config.endswith(format.extensions):
+                decoder = format
 
     try:
-        with click.open_file(config_file, "rb") as fp:
-            data = loader(fp)
-    except decoder_exc as err:
-        raise click.ClickException(f"{config_file!r}: {err}")
-    except OSError as err:
-        raise click.ClickException(f"{config_file!r}: {err.strerror}")
+        with click.open_file(config, "rb") as fp:
+            fp = t.cast(t.BinaryIO, fp)
+            data = decoder.load(fp)
+    except DecoderError as exc:
+        raise click.ClickException(f"{config!r}: {decoder.name}: {exc}")
+    except OSError as exc:
+        raise click.ClickException(f"{config!r}: {exc.strerror}")
 
-    ctx.obj = config_from_dict(BaseConfig, data)
+    try:
+        ctx.obj = dataclass_from_dict(BaseConfig, data)
+    except DataclassFromDictError as exc:
+        raise click.ClickException(f"{config!r}: {exc}")
