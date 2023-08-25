@@ -1,16 +1,18 @@
 import json
 import tomllib
-import typing as t
+from typing import Any, Protocol, TypeAlias
 
-DecoderError: t.TypeAlias = ValueError
+from budg.utils.types import SupportsRead
+
+DecoderError: TypeAlias = ValueError
 
 
-class Decoder(t.Protocol):
+class Decoder(Protocol):
     name: str
     extensions: tuple[str]
 
     @staticmethod
-    def load(fp: t.BinaryIO, /) -> dict[str, t.Any]:
+    def load(fp: SupportsRead[bytes], /) -> dict[str, Any]:
         ...
 
 
@@ -19,7 +21,7 @@ class TOMLDecoder(Decoder):
     extensions = (".toml",)
 
     @staticmethod
-    def load(fp: t.BinaryIO) -> dict[str, t.Any]:
+    def load(fp: SupportsRead[bytes]) -> dict[str, Any]:
         return tomllib.load(fp)
 
 
@@ -28,8 +30,8 @@ class JSONDecoder(Decoder):
     extensions = (".json",)
 
     @staticmethod
-    def load(fp: t.BinaryIO) -> dict[str, t.Any]:
-        data: dict[str, t.Any] | t.Any = json.load(fp)
+    def load(fp: SupportsRead[bytes]) -> dict[str, Any]:
+        data: dict[str, Any] | Any = json.load(fp)
         if not isinstance(data, dict):
             raise json.JSONDecodeError("Expecting object", "", 0)
         return data

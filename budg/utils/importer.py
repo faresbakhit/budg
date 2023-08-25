@@ -1,12 +1,12 @@
 import importlib
-import typing as t
+from typing import Any
 
 
 class ImportFromStringError(Exception):
     pass
 
 
-def import_from_string(import_str: str) -> t.Any:
+def import_from_string(import_str: str) -> Any:
     mod, _, attrs = import_str.partition(":")
 
     if not mod or not attrs or mod[0] == ".":
@@ -14,7 +14,7 @@ def import_from_string(import_str: str) -> t.Any:
         raise ImportFromStringError(message.format(import_str=import_str))
 
     try:
-        instance: t.Any = importlib.import_module(mod)
+        instance: Any = importlib.import_module(mod)
     except ModuleNotFoundError:
         message = "Module '{mod}' not found."
         raise ImportFromStringError(message.format(mod=mod)) from None

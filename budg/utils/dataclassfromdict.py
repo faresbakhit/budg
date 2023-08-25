@@ -1,4 +1,5 @@
-import typing as t
+from collections.abc import Mapping
+from typing import Any, TypeVar
 
 import dacite
 from dacite.exceptions import ForwardReferenceError as ForwardReferenceError
@@ -20,11 +21,11 @@ __all__ = [
     "WrongTypeError",
 ]
 
-T = t.TypeVar("T")
+T = TypeVar("T")
 
 DataclassFromDictError = dacite.DaciteError
 DataclassFromDictFieldError = dacite.DaciteFieldError
 
 
-def dataclass_from_dict(dataclass: type[T], data: t.Mapping[str, t.Any]) -> T:
+def dataclass_from_dict(dataclass: type[T], data: Mapping[str, Any]) -> T:
     return dacite.from_dict(dataclass, data)

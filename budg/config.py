@@ -1,19 +1,19 @@
 from dataclasses import dataclass, field
 
-dataclass = dataclass(frozen=True, kw_only=True, slots=True)
+config = dataclass(frozen=True, kw_only=True, slots=True)
 
 
-@dataclass
+@config
 class BudgRule:
     pass
 
 
-@dataclass
+@config
 class BudgConfig:
     directories: dict[str, str] = field(default_factory=dict)
     rules: list[BudgRule] = field(default_factory=list)
 
 
-@dataclass
+@config
 class BaseConfig:
     budg: BudgConfig = field(default_factory=BudgConfig)
