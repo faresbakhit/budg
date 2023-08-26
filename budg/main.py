@@ -18,4 +18,4 @@ def main(args: Sequence[str] | None = None) -> NoReturn:
 
     cmd.budg.add_command(cmd.build)
     cmd.budg.add_command(cmd.serve)
-    cmd.budg.main(args, prog_name="Budg")
+    cmd.budg.main(args, prog_name="budg")

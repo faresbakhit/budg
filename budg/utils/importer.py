@@ -2,7 +2,7 @@ import importlib
 from typing import Any
 
 
-class ImportFromStringError(Exception):
+class ImportFromStringError(ValueError):
     pass
 
 
@@ -30,3 +30,7 @@ def import_from_string(import_str: str) -> Any:
             raise ImportFromStringError(message.format(obj=instance.__name__, mod=mod, attr=nested_attr)) from None
 
     return instance
+
+
+def object_name_from_import_string(import_str: str) -> str:
+    return import_str.partition(":")[2].rsplit(".", 1)[-1]

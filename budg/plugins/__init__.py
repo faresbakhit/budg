@@ -1,21 +1,31 @@
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 
-from budg.utils.classproperty import classproperty
+_T_CONFIG = TypeVar("_T_CONFIG")
+_T_OPTIONS = TypeVar("_T_OPTIONS")
 
-_T_co = TypeVar("_T_co", covariant=True)
+_ABSTRACTCLASSMETHOD_ERR = "{method} in {cls.__name__} is an abstract method"
 
 
-class BasePlugin(ABC, Generic[_T_co]):
+class Plugin(ABC, Generic[_T_CONFIG, _T_OPTIONS]):
     @abstractmethod
-    def __init__(self, config: _T_co) -> None:
+    def __init__(self, config: _T_CONFIG) -> None:
         """Create a new instance of this plugin."""
 
-    @classproperty
+    @classmethod
     @abstractmethod
-    def config_dataclass(cls) -> type[_T_co]:
-        """Return the config dataclaass type.
+    def get_config_dataclass(cls) -> type[_T_CONFIG]:
+        """Return the config dataclaass type."""
+        msg = _ABSTRACTCLASSMETHOD_ERR.format(cls=cls, method="get_config_dataclass")
+        raise NotImplementedError(msg)
 
-        Plugin implementeres, this function must be marked with `@classproperty`
-        from `budg.utils.classproperty`.
-        """
+    @classmethod
+    @abstractmethod
+    def get_options_dataclass(cls) -> type[_T_OPTIONS]:
+        """Return the options dataclaass type."""
+        msg = _ABSTRACTCLASSMETHOD_ERR.format(cls=cls, method="get_options_dataclass")
+        raise NotImplementedError(msg)
+
+    @abstractmethod
+    def build(self, options: _T_OPTIONS) -> None:
+        ...

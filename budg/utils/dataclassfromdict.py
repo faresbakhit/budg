@@ -21,11 +21,13 @@ __all__ = [
     "WrongTypeError",
 ]
 
-T = TypeVar("T")
 
 DataclassFromDictError = dacite.DaciteError
 DataclassFromDictFieldError = dacite.DaciteFieldError
 
 
-def dataclass_from_dict(dataclass: type[T], data: Mapping[str, Any]) -> T:
+_T = TypeVar("_T")
+
+
+def dataclass_from_dict(dataclass: type[_T], data: Mapping[str, Any]) -> _T:
     return dacite.from_dict(dataclass, data)

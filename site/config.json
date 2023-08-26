@@ -1,21 +1,18 @@
 {
     "budg": {
-        "directories": {
-            "templates": "./layouts",
-            "sources": "./content",
-            "statics": "./public",
-            "build": "./dist"
-        },
         "plugins": {
             "copier": {
-                "import": "budg.plugins.copier:CopierPlugin",
+                "source": "budg.plugins.copier:CopierPlugin",
                 "config": {}
             }
         },
         "rules": [
             {
-                "plugin": "budg.plugins.copier",
-                "options": {}
+                "plugin": "copier",
+                "options": {
+                    "directory": "./public/",
+                    "destination": "./dist/"
+                }
             }
         ]
     }
