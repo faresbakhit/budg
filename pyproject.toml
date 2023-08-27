@@ -1,6 +1,41 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=61.0.0"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "budg"
+description = "The Modern and Extensible Static Site Generator"
+readme = {file = "README.md", content-type = "text/markdown"}
+requires-python = ">=3.11"
+license = {file = "LICENSE"}
+authors = [{name = "Fares Ahmed", email = "faresa.bakhit@gmail.com"}]
+maintainers = [{name = "Fares Ahmed", email = "faresa.bakhit@gmail.com"}]
+dependencies = [
+    "dacite==1.8.1",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://faresbakhit.github.io/budg"
+Documentation = "https://faresbakhit.github.io/budg/docs"
+Repository = "https://github.com/faresbakhit/budg"
+
+[project.scripts]
+budg = "budg.main:main"
+
+[project.optional-dependencies]
+dev = [
+    "black==23.7.0",
+    "flake8==6.1.0",
+    "isort==5.12.0",
+    "mypy==1.5.0",
+]
+
+[tool.setuptools]
+packages = ["budg", "budg.plugins", "budg.utils"]
+
+[tool.setuptools.dynamic]
+version = {attr = "budg.__version__"}
 
 [tool.black]
 line-length = 119
