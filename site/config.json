@@ -10,8 +10,7 @@
             {
                 "plugin": "copier",
                 "options": {
-                    "directory": "./public/",
-                    "destination": "./dist/"
+                    "directory": "./public/"
                 }
             }
         ]

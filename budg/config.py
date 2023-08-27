@@ -21,7 +21,7 @@ class BudgConfigPlugin:
     def to_plugin(self) -> Plugin[Any, Any]:
         obj = import_from_string(self.source)
         if not issubclass(obj, Plugin):
-            raise NotSubclassError("Must be a sub-class of 'budg.plugins.Plugin'")
+            raise NotSubclassError("must be a sub-class of 'budg.plugins.Plugin'")
         try:
             config_dataclass: Any = obj.get_config_dataclass()
         except NotImplementedError as exc:
@@ -62,5 +62,4 @@ class BudgConfig:
 
 @config
 class Config:
-    source: str
     budg: BudgConfig = field(default_factory=BudgConfig)
