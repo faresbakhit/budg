@@ -1,18 +1,25 @@
+from abc import ABC, abstractmethod
 from collections.abc import Mapping
-from typing import Any, Protocol, TypeAlias
+from typing import Any, TypeAlias
 
 from budg.utils.types import SupportsRead
 
 DecoderError: TypeAlias = ValueError
 
 
-class Decoder(Protocol):
+class Decoder(ABC):
     name: str
     extensions: tuple[str]
 
     @classmethod
+    @abstractmethod
     def load(cls, fp: SupportsRead[bytes], /) -> Mapping[str, Any]:
-        ...
+        """Deserialize `fp` (binary file-like object) with this decoder"""
+
+    @classmethod
+    @property
+    def default_extension(cls):
+        return cls.extensions[0]
 
 
 class TOMLDecoder(Decoder):

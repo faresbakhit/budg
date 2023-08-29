@@ -38,11 +38,11 @@ packages = ["budg", "budg.plugins", "budg.utils"]
 version = {attr = "budg.__version__"}
 
 [tool.black]
-line-length = 119
 target-version = ["py311"]
 
 [tool.isort]
 profile = "black"
+py_version = "311"
 
 [tool.mypy]
 python_version = "3.11"

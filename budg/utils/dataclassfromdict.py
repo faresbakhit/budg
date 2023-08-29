@@ -29,5 +29,5 @@ DataclassFromDictFieldError = dacite.DaciteFieldError
 _T = TypeVar("_T")
 
 
-def dataclass_from_dict(dataclass: type[_T], data: Mapping[str, Any]) -> _T:
+def dataclass_from_dict(data: Mapping[str, Any], dataclass: type[_T]) -> _T:
     return dacite.from_dict(dataclass, data)

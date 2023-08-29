@@ -14,15 +14,26 @@ class ExitStatusBuilder:
 
     @overload
     def __new__(
-        cls: type[Self], code: Literal[ExitCode.FAILURE], /, *status: object, sep: str | None = " "
+        cls: type[Self],
+        code: Literal[ExitCode.FAILURE],
+        /,
+        *status: object,
+        sep: str | None = " ",
     ) -> "ExitFailureStatus":
         ...
 
-    def __new__(cls: type[Self], code: ExitCode, /, *status: object, sep: str | None = " ") -> Self:
+    def __new__(
+        cls: type[Self],
+        code: ExitCode,
+        /,
+        *status: object,
+        sep: str | None = " ",
+    ) -> Self:
         if not status:
             return ExitStatusCode(code)
         if code == ExitCode.SUCCESS:
-            raise ValueError("additional exit status only available for ExitStatus.FAILURE")
+            msg = "additional exit status not available for ExitCode.SUCCESS"
+            raise ValueError(msg)
         return ExitFailureStatus(*status, sep=sep)
 
 
@@ -35,7 +46,8 @@ class ExitFailureStatus(str, ExitStatusBuilder):
         return super().__new__(cls, sep.join(map(str, values)))
 
     def __repr__(self) -> str:
-        return f"ExitStatus(ExitCode.FAILURE, {self.strip(self.FAILURE_STATUS_PREFIX)!r})"
+        s = "ExitStatus(ExitCode.FAILURE, {!r})"
+        return s.format(self.strip(self.FAILURE_STATUS_PREFIX))
 
     def __str__(self) -> str:
         return self.FAILURE_STATUS_PREFIX + self
