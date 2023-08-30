@@ -4,7 +4,8 @@ import sys
 from typing import TextIO
 
 import budg
-from budg.config import ConfigLoaderError, load_config
+from budg.builder import build
+from budg.config import ConfigLoaderError, PluginTransformerError, load_config
 from budg.exit import EXIT_SUCCESS, ExitFailureStatus, ExitStatus
 from budg.utils.decoder import Decoder, JSONDecoder, TOMLDecoder
 
@@ -93,12 +94,12 @@ def main(args: list[str] | None = None, output: TextIO | None = None) -> ExitSta
     except ConfigLoaderError as exc:
         return ExitFailureStatus(exc)
 
-    print(config)
+    try:
+        plugins = config.budg.transform_plugins()
+    except PluginTransformerError as exc:
+        return ExitFailureStatus(f"'{config.source}': {exc}")
 
-    # try:
-    #     plugins = config.budg.transform_plugins()
-    # except (ImportFromStringError, DataclassFromDictError) as exc:
-    #     return ExitFailureStatus(f"'{config_file}': {exc}")
+    build(plugins, config.budg.rules)
 
     # for no, rule in enumerate(config.budg.rules):
     #     try:

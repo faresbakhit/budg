@@ -1,2 +1,0 @@
-class NotSubclassError(Exception):
-    pass

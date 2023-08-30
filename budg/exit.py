@@ -28,7 +28,7 @@ class ExitStatusBuilder:
         /,
         *status: object,
         sep: str | None = " ",
-    ) -> Self:
+    ) -> "ExitStatusCode | ExitFailureStatus":
         if not status:
             return ExitStatusCode(code)
         if code == ExitCode.SUCCESS:

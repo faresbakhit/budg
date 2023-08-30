@@ -1,6 +1,6 @@
 {
     "budg": {
-        "plugins": {
+        "dependencies": {
             "copier": {
                 "source": "budg.plugins.copier:CopierPlugin",
                 "config": {}

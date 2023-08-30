@@ -5,10 +5,10 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import budg
+from budg.builder import BuilderRule
 from budg.plugins import Plugin
 from budg.utils.dataclassfromdict import DataclassFromDictError, dataclass_from_dict
 from budg.utils.decoder import Decoder, DecoderError
-from budg.utils.exceptions import NotSubclassError
 from budg.utils.importer import (
     ImportFromStringError,
     import_from_string,
@@ -19,61 +19,53 @@ config = dataclass(frozen=True, kw_only=True, slots=True)
 
 
 @config
-class BudgConfigPlugin:
+class BudgConfigDependency:
     source: str
     config: dict[str, Any]
 
     def to_plugin(self) -> Plugin[Any, Any]:
-        obj = import_from_string(self.source)
+        try:
+            obj = import_from_string(self.source)
+        except ImportFromStringError as exc:
+            raise PluginTransformerError(exc)
         if not issubclass(obj, Plugin):
-            raise NotSubclassError("must be a sub-class of 'budg.plugins.Plugin'")
+            msg = "must be a sub-class of 'budg.plugins.Plugin'"
+            raise PluginTransformerError(msg)
         try:
             config_dataclass: Any = obj.get_config_dataclass()
         except NotImplementedError as exc:
-            raise ImportFromStringError(exc)
-        config = dataclass_from_dict(self.config, config_dataclass)
+            raise PluginTransformerError(exc)
         try:
-            instance: Plugin[Any, Any] = obj(config)
-        except TypeError as exc:
-            raise ImportFromStringError(exc)
+            config = dataclass_from_dict(self.config, config_dataclass)
+        except DataclassFromDictError as exc:
+            raise PluginTransformerConfigError(exc)
+        instance: Plugin[Any, Any] = obj(config)
         return instance
 
 
 @config
-class BudgConfigRule:
-    plugin: str
-    options: dict[str, Any]
-
-
-@config
 class BudgConfig:
-    rules: list[BudgConfigRule]
-    plugins: dict[str, BudgConfigPlugin] = field(default_factory=dict)
+    rules: list[BuilderRule]
+    dependencies: dict[str, BudgConfigDependency]
 
     def transform_plugins(self) -> dict[str, Plugin[Any, Any]]:
         d: dict[str, Plugin[Any, Any]] = {}
-        for name, config_plugin in self.plugins.items():
+        for name, dependency in self.dependencies.items():
             try:
-                d[name] = config_plugin.to_plugin()
-            except ImportFromStringError as exc:
-                raise ImportFromStringError(f"budg.plugins.{name}.plugin: {exc}")
-            except NotSubclassError as exc:
-                objname = object_name_from_import_string(config_plugin.source)
-                raise ImportFromStringError(
-                    f"budg.plugins.{name}.plugin: '{objname}' {exc}"
-                )
-            except DataclassFromDictError as exc:
-                raise DataclassFromDictError(f"budg.plugins.{name}.config: {exc}")
+                d[name] = dependency.to_plugin()
+            except PluginTransformerConfigError as exc:
+                msg = "budg.plugins.{}.config: {}"
+                raise PluginTransformerConfigError(msg.format(name, exc)) from None
+            except PluginTransformerError as exc:
+                msg = "budg.plugins.{}.plugin: {}"
+                raise PluginTransformerConfigError(msg.format(name, exc)) from None
         return d
 
 
 @config
 class Config:
+    source: str
     budg: BudgConfig = field(default_factory=BudgConfig)
-
-
-class ConfigLoaderError(Exception):
-    pass
 
 
 def load_config(
@@ -108,6 +100,7 @@ def load_config(
         if not isinstance(data, Mapping):
             msg = "return value of '{}()' is not a 'Mapping'"
             raise ConfigLoaderError(msg.format(name))
+        data = {"source": config_from, **data}
         return dataclass_from_dict(data, Config)
 
     def determine_config() -> tuple[str, type[Decoder]]:
@@ -137,6 +130,7 @@ def load_config(
     try:
         with open(config_from, "rb") as fp:
             data = decoder.load(fp)
+            data = {"source": config_from, **data}
             return dataclass_from_dict(data, Config)
     except OSError as exc:
         raise ConfigLoaderError(f"'{config_from}': {exc.strerror}")
@@ -144,3 +138,15 @@ def load_config(
         raise ConfigLoaderError(f"'{config_from}': {decoder.name}: {exc}")
     except DataclassFromDictError as exc:
         raise ConfigLoaderError(f"'{config_from}': {exc}")
+
+
+class ConfigLoaderError(Exception):
+    pass
+
+
+class PluginTransformerError(Exception):
+    pass
+
+
+class PluginTransformerConfigError(PluginTransformerError):
+    pass

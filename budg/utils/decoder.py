@@ -18,7 +18,7 @@ class Decoder(ABC):
 
     @classmethod
     @property
-    def default_extension(cls):
+    def default_extension(cls) -> str:
         return cls.extensions[0]
 
 
@@ -43,5 +43,5 @@ class JSONDecoder(Decoder):
 
         data: dict[str, Any] | Any = json.load(fp)
         if not isinstance(data, dict):
-            raise json.JSONDecodeError("expecting object", "", 0)
+            raise json.JSONDecodeError("Expecting object", "", 0)
         return data
