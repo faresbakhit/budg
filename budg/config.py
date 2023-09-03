@@ -109,7 +109,7 @@ def load_config(
                 config_path = path_template.format(ext)
                 if os.path.exists(config_path):
                     return config_path, decoder
-        config_path = path_template.format(default_decoder.default_extension)
+        config_path = path_template.format(default_decoder.get_default_extension())
         return (config_path, default_decoder)
 
     decoder = default_decoder
@@ -117,7 +117,7 @@ def load_config(
     if config_format is not None:
         decoder = available_decoders[config_format]
         if config_from is None:
-            config_from = path_template.format(decoder.default_extension)
+            config_from = path_template.format(decoder.get_default_extension())
     elif config_from is None:
         config_from, decoder = determine_config()
         config_format = decoder.name

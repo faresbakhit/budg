@@ -1,20 +1,39 @@
 import asyncio
 import contextlib
-import http.server
+import email.utils
+import mimetypes
+import os
+import posixpath
 import socket
-from asyncio import AbstractEventLoop, StreamReader, StreamWriter
-from collections.abc import Callable
+import time
+import urllib.parse
+from asyncio import AbstractEventLoop, StreamReader, StreamReaderProtocol, StreamWriter
+from enum import Enum
+from functools import partial
 from http import HTTPStatus
-from typing import Generic, ParamSpec, TypeVar
 
-_P = ParamSpec("_P")
-_T_Protocol = TypeVar("_T_Protocol", bound=asyncio.BaseProtocol)
+from budg import version as budg_version
 
 
-class StreamRequestHandler:
-    def __init__(self, reader: StreamReader, writer: StreamWriter) -> None:
+class HTTPSymbol(bytes, Enum):
+    SPACE = b" "
+    CRLF = b"\r\n"
+    VERSION_START = b"HTTP/"
+    SLASH = b"/"
+    VERSION_SEP = b"."
+
+
+class RequestHandler:
+    def __init__(
+        self,
+        reader: StreamReader,
+        writer: StreamWriter,
+        loop: AbstractEventLoop,
+    ) -> None:
         self.reader = reader
         self.writer = writer
+        self.loop = loop
+        self.close_connection = True
 
     async def setup(self) -> None:
         pass
@@ -30,36 +49,19 @@ class StreamRequestHandler:
         await self.writer.wait_closed()
 
 
-class BaseHTTPRequestHandler(StreamRequestHandler):
-    def __init__(self, reader: StreamReader, writer: StreamWriter) -> None:
-        super().__init__(reader, writer)
-        self.close_connection = False
+class StreamProtocol(StreamReaderProtocol):
+    def __init__(self, handler: type[RequestHandler], loop: AbstractEventLoop) -> None:
+        async def handler_wrapper(r: StreamReader, w: StreamWriter) -> None:
+            instance = handler(r, w, loop)
+            await instance.setup()
+            try:
+                await instance.handle()
+                while not instance.close_connection:
+                    await instance.handle()
+            finally:
+                await instance.finish()
 
-    async def handle(self) -> None:
-        self.close_connection = True
-
-        await self.handle_one_request()
-        while not self.close_connection:
-            await self.handle_one_request()
-
-    async def handle_one_request(self) -> None:
-        try:
-            await self.reader.readline()
-        except ValueError:
-            ...
-
-
-class StreamProtcool(asyncio.streams.FlowControlMixin, asyncio.Protocol):
-    def __init__(
-        self,
-        handler: type[StreamRequestHandler],
-        loop: AbstractEventLoop,
-    ) -> None:
-        super().__init__(loop)
-        self.handler = handler
-        self.loop = loop
-        self.reader = StreamReader(4, loop=self.loop)
-        self.close_waiter = loop.create_future()
+        super().__init__(StreamReader(loop=loop), handler_wrapper, loop)
 
     def connection_made(self, transport: asyncio.BaseTransport) -> None:
         sock: socket.socket = transport.get_extra_info("socket")
@@ -69,63 +71,160 @@ class StreamProtcool(asyncio.streams.FlowControlMixin, asyncio.Protocol):
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
             sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
 
-        self.reader.set_transport(transport)
-
-        assert isinstance(transport, asyncio.WriteTransport)
-        writer = StreamWriter(transport, self, self.reader, self.loop)
-
-        self.loop.create_task(self.handle_connection(writer))
-
-    def data_received(self, data: bytes) -> None:
-        self.reader.feed_data(data)
-
-    def eof_received(self) -> bool:
-        self.reader.feed_eof()
-        return True
-
-    def connection_lost(self, exc: Exception | None) -> None:
-        if exc is None:
-            self.reader.feed_eof()
-        else:
-            self.reader.set_exception(exc)
-        if not self.close_waiter.done():
-            if exc is None:
-                self.close_waiter.set_result(None)
-            else:
-                self.close_waiter.set_exception(exc)
-        super().connection_lost(exc)
-
-    async def handle_connection(self, writer: StreamWriter) -> None:
-        handler = self.handler(self.reader, writer)
-        await handler.setup()
-        try:
-            await handler.handle()
-        finally:
-            await handler.finish()
-
-    def _get_close_waiter(self, _: StreamWriter) -> asyncio.Future[None]:
-        return self.close_waiter
+        super().connection_made(transport)
 
 
-class ProtocolFactory(Generic[_P, _T_Protocol]):
+class HTTPRequestHandler(RequestHandler):
     def __init__(
         self,
-        factory: Callable[_P, _T_Protocol],
-        *args: _P.args,
-        **kwargs: _P.kwargs,
+        reader: StreamReader,
+        writer: StreamWriter,
+        loop: AbstractEventLoop,
+        directory: str,
     ) -> None:
-        self.factory = factory
-        self.args = args
-        self.kwargs = kwargs
+        super().__init__(reader, writer, loop)
+        self.directory = directory
 
-    def __call__(self) -> _T_Protocol:
-        return self.factory(*self.args, **self.kwargs)
+    async def handle(self) -> None:
+        request_line = await self.reader.readline()
+        request_line_words = request_line.split(HTTPSymbol.SPACE, maxsplit=2)
+
+        if len(request_line_words) < 2:
+            self.write_response(HTTPStatus.BAD_REQUEST)
+            self.write_header(b"Connection", b"close")
+            self.writer.write(HTTPSymbol.CRLF)
+            self.close_connection = True
+            return
+
+        if len(request_line_words) == 3:
+            version_word = request_line_words[-1]
+            try:
+                if not version_word.startswith(HTTPSymbol.VERSION_START):
+                    raise ValueError
+                version_word = version_word.split(HTTPSymbol.SLASH, maxsplit=1)[1]
+                version_parts = version_word.split(HTTPSymbol.VERSION_SEP, maxsplit=1)
+                version = (int(version_parts[0]), int(version_parts[1]))
+            except ValueError:
+                self.write_response(HTTPStatus.BAD_REQUEST)
+                self.writer.write(HTTPSymbol.CRLF)
+                self.close_connection = True
+                return
+            if version >= (1, 1):
+                self.close_connection = False
+        else:
+            version = (0, 9)
+
+        if request_line_words[0] != b"GET":
+            self.write_response(HTTPStatus.METHOD_NOT_ALLOWED)
+            self.writer.write(HTTPSymbol.CRLF)
+            self.close_connection = True
+            return
+
+        path = self.translate_path(request_line_words[1])
+        if os.path.isdir(path):
+            parts = urllib.parse.urlsplit(path)
+            if not parts.path.endswith("/"):
+                self.write_response(HTTPStatus.MOVED_PERMANENTLY)
+                new_parts = (parts[0], parts[1], parts[2] + "/", parts[3], parts[4])
+                new_url = urllib.parse.urlunsplit(new_parts)
+                self.write_header(b"Location", new_url.encode(errors="surrogatepass"))
+            for index in "index.html", "index.htm":
+                file = os.path.join(path, index)
+                if os.path.isfile(file):
+                    path = file
+                    break
+        content_type = self.guess_type(path)
+
+        if path.endswith("/"):
+            self.write_response(HTTPStatus.NOT_FOUND)
+            self.writer.write(HTTPSymbol.CRLF)
+            self.close_connection = True
+            return
+
+        try:
+            file_stat = os.stat(path)
+        except FileNotFoundError:
+            self.write_response(HTTPStatus.NOT_FOUND)
+            self.writer.write(HTTPSymbol.CRLF)
+            self.close_connection = True
+            return
+
+        self.write_response(HTTPStatus.OK)
+        self.write_header(b"Content-Type", content_type.encode(errors="surrogatepass"))
+        self.write_header(b"Content-Length", b"%d" % file_stat.st_size)
+
+        with open(path, "rb") as fp:
+            await self.loop.sendfile(self.writer.transport, fp)
+
+        self.close_connection = True
+
+    def write_response(
+        self,
+        status: HTTPStatus,
+        version: tuple[int, int] = (1, 1),
+    ):
+        self.write_status_line(status, version)
+        self.write_header(b"Server", budg_version.encode("ascii"))
+        date = email.utils.formatdate(time.time(), usegmt=True)
+        self.write_header(b"Date", date.encode("ascii"))
+
+    def write_status_line(
+        self,
+        status: HTTPStatus,
+        version: tuple[int, int] = (1, 1),
+    ) -> None:
+        if version == (0, 9):
+            return
+        self.writer.write(
+            b"HTTP/%d.%d %d %b"
+            % (
+                version[0],
+                version[1],
+                status,
+                status.phrase.encode("ascii"),
+            )
+        )
+        self.writer.write(HTTPSymbol.CRLF)
+
+    def write_header(self, name: bytes, value: bytes) -> None:
+        self.writer.write(b"%s: %s" % (name, value))
+        self.writer.write(HTTPSymbol.CRLF)
+
+    def translate_path(self, raw_path: bytes) -> str:
+        # abandon query parameters
+        raw_path = raw_path.split(b"?", 1)[0]
+        raw_path = raw_path.split(b"#", 1)[0]
+        # Don't forget explicit trailing slash when normalizing. Issue17324
+        trailing_slash = raw_path.rstrip().endswith(b"/")
+        try:
+            path = urllib.parse.unquote(raw_path, errors="surrogatepass")
+        except UnicodeDecodeError:
+            path = urllib.parse.unquote(raw_path)
+        path = posixpath.normpath(path)
+        words = path.split("/")
+        words = filter(None, words)
+        path = self.directory
+        for word in words:
+            if os.path.dirname(word) or word in (os.curdir, os.pardir):
+                # Ignore components that are not a simple file/directory name
+                continue
+            path = os.path.join(path, word)
+        if trailing_slash:
+            path += "/"
+        return path
+
+    def guess_type(self, path: str) -> str:
+        _, ext = posixpath.splitext(path)
+        ext = ext.lower()
+        guess, _ = mimetypes.guess_type(path)
+        return guess or "application/octet-stream"
 
 
 async def main() -> None:
     loop = asyncio.get_running_loop()
 
-    protocol_factory = ProtocolFactory(StreamProtcool, BaseHTTPRequestHandler, loop)
+    request_handler = partial(HTTPRequestHandler, directory=".")
+    protocol_factory = partial(StreamProtocol, request_handler, loop)
     server = await loop.create_server(protocol_factory, "::", 3000)
 
     async with server as httpd:

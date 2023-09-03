@@ -17,8 +17,7 @@ class Decoder(ABC):
         """Deserialize `fp` (binary file-like object) with this decoder"""
 
     @classmethod
-    @property
-    def default_extension(cls) -> str:
+    def get_default_extension(cls) -> str:
         return cls.extensions[0]
 
 

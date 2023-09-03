@@ -3,6 +3,7 @@
     "flake8.importStrategy": "fromEnvironment",
     "isort.importStrategy": "fromEnvironment",
     "mypy-type-checker.importStrategy": "fromEnvironment",
+    "python.analysis.typeCheckingMode": "strict",
     "[python]": {
         "editor.defaultFormatter": "ms-python.black-formatter",
         "editor.formatOnSave": true,

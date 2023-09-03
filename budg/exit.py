@@ -1,5 +1,5 @@
 from enum import IntEnum
-from typing import Literal, Self, TypeAlias, overload
+from typing import Self, TypeAlias
 
 
 class ExitCode(IntEnum):
@@ -8,27 +8,13 @@ class ExitCode(IntEnum):
 
 
 class ExitStatusBuilder:
-    @overload
-    def __new__(cls: type[Self], code: ExitCode, /) -> "ExitStatusCode":
-        ...
-
-    @overload
-    def __new__(
-        cls: type[Self],
-        code: Literal[ExitCode.FAILURE],
-        /,
-        *status: object,
-        sep: str | None = " ",
-    ) -> "ExitFailureStatus":
-        ...
-
-    def __new__(
-        cls: type[Self],
+    def __new__(  # type: ignore[misc]
+        cls,
         code: ExitCode,
         /,
         *status: object,
         sep: str | None = " ",
-    ) -> "ExitStatusCode | ExitFailureStatus":
+    ) -> "ExitStatus":
         if not status:
             return ExitStatusCode(code)
         if code == ExitCode.SUCCESS:
@@ -38,7 +24,7 @@ class ExitStatusBuilder:
 
 
 class ExitFailureStatus(str, ExitStatusBuilder):
-    FAILURE_STATUS_PREFIX = "error: "
+    FAILURE_STATUS_PREFIX: str = "error: "
 
     def __new__(cls, *values: object, sep: str | None = " ") -> Self:
         if sep is None:
