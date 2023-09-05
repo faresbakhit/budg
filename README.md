@@ -32,7 +32,7 @@ Options:
 
 Budg can be configured using either a static config file or dynamically from a python function with the format `<module>:<object>[.<attribute>]*` passed to the `--config` option.
 
-The supported formats for a static config file are `toml`, and `json`. The default being `toml` for files 
+The supported formats for a static config file are `toml`, and `json`. The default format is `toml`, but `json` is used if the config file has the `.json` extension. Budg by *default* searches the current working directory for `config.toml`, then `config.json`.
 
 Example:
 
