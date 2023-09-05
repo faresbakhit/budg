@@ -9,7 +9,7 @@ class ImportFromStringError(ValueError):
 def import_from_string(import_str: str) -> Any:
     mod, _, attrs = import_str.partition(":")
 
-    if not mod or not attrs or mod[0] == ".":
+    if not mod or not attrs:
         msg = "import string '{}' must be in format '<module>:<object>[.<attribute>]*'."
         raise ImportFromStringError(msg.format(import_str))
 

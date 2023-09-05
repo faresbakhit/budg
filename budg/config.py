@@ -1,19 +1,18 @@
 import inspect
 import os
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 import budg
-from budg.builder import BuilderRule
-from budg.plugins import Plugin
-from budg.utils.dataclassfromdict import DataclassFromDictError, dataclass_from_dict
-from budg.utils.decoder import Decoder, DecoderError
-from budg.utils.importer import (
+from budg.dataclassfromdict import DataclassFromDictError, dataclass_from_dict
+from budg.decoders import Decoder, DecoderError
+from budg.importer import (
     ImportFromStringError,
     import_from_string,
     object_name_from_import_string,
 )
+from budg.plugins import Plugin
 
 config = dataclass(frozen=True, kw_only=True, slots=True)
 
@@ -36,11 +35,17 @@ class BudgConfigDependency:
         except NotImplementedError as exc:
             raise PluginTransformerError(exc)
         try:
-            config = dataclass_from_dict(self.config, config_dataclass)
+            config = dataclass_from_dict(self.config, config_dataclass, strict=True)
         except DataclassFromDictError as exc:
             raise PluginTransformerConfigError(exc)
         instance: Plugin[Any, Any] = obj(config)
         return instance
+
+
+@config
+class BuilderRule:
+    plugin: str
+    options: dict[str, Any]
 
 
 @config
@@ -57,7 +62,7 @@ class BudgConfig:
                 msg = "budg.plugins.{}.config: {}"
                 raise PluginTransformerConfigError(msg.format(name, exc)) from None
             except PluginTransformerError as exc:
-                msg = "budg.plugins.{}.plugin: {}"
+                msg = "budg.plugins.{}.source: {}"
                 raise PluginTransformerConfigError(msg.format(name, exc)) from None
         return d
 
@@ -65,7 +70,7 @@ class BudgConfig:
 @config
 class Config:
     source: str
-    budg: BudgConfig = field(default_factory=BudgConfig)
+    budg: BudgConfig
 
 
 def load_config(
@@ -106,10 +111,10 @@ def load_config(
     def determine_config() -> tuple[str, type[Decoder]]:
         for decoder in available_decoders.values():
             for ext in decoder.extensions:
-                config_path = path_template.format(ext)
+                config_path = path_template.format(ext=ext)
                 if os.path.exists(config_path):
                     return config_path, decoder
-        config_path = path_template.format(default_decoder.get_default_extension())
+        config_path = path_template.format(ext=default_decoder.get_default_extension())
         return (config_path, default_decoder)
 
     decoder = default_decoder
@@ -117,7 +122,7 @@ def load_config(
     if config_format is not None:
         decoder = available_decoders[config_format]
         if config_from is None:
-            config_from = path_template.format(decoder.get_default_extension())
+            config_from = path_template.format(ext=decoder.get_default_extension())
     elif config_from is None:
         config_from, decoder = determine_config()
         config_format = decoder.name

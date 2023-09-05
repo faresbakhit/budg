@@ -1,8 +1,14 @@
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
-from typing import Any, TypeAlias
+from typing import Any, Protocol, TypeAlias, TypeVar
 
-from budg.utils.types import SupportsRead
+_T_co = TypeVar("_T_co", covariant=True)
+
+
+class SupportsRead(Protocol[_T_co]):
+    def read(self, n: int = ..., /) -> _T_co:
+        ...
+
 
 DecoderError: TypeAlias = ValueError
 

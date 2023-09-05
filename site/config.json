@@ -4,14 +4,23 @@
             "copier": {
                 "source": "budg.plugins.copier:CopierPlugin",
                 "config": {}
+            },
+            "myplugin": {
+                "source": "addons:MyPlugin",
+                "config": {}
             }
         },
         "rules": [
             {
                 "plugin": "copier",
                 "options": {
-                    "directory": "./public/"
+                    "directory": "./public/",
+                    "destination": "./dist/"
                 }
+            },
+            {
+                "plugin": "myplugin",
+                "options": {}
             }
         ]
     }
