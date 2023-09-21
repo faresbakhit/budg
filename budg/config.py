@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import inspect
 import os
 from collections.abc import Mapping
@@ -14,7 +16,7 @@ from budg.importer import (
 )
 from budg.plugins import Plugin
 
-config = dataclass(frozen=True, kw_only=True, slots=True)
+config = dataclass(frozen=True)
 
 
 @config

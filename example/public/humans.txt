@@ -1,0 +1,8 @@
+Budg, the static site generator and this website (Hosted by GitHub) is
+built by Fares Ahmed with love form Cairo, Egypt. Want to get in touch?
+fares [at] duck.com.
+
+For styling, the website uses Poole, The Jekyll Butler,
+check it out at https://getpoole.com/.
+
+Have a contribution for Budg? https://github.com/faresbakhit/budg.

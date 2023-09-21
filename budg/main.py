@@ -1,21 +1,23 @@
+from __future__ import annotations
+
 import getopt
 import os
 import sys
-from typing import TextIO
 
 import budg
 from budg.config import ConfigLoaderError, PluginTransformerError, load_config
 from budg.dataclassfromdict import DataclassFromDictError, dataclass_from_dict
 from budg.decoders import Decoder, JSONDecoder, TOMLDecoder
 from budg.exit import EXIT_SUCCESS, ExitFailureStatus, ExitStatus
+from budg.plugins import PluginError
 
 AVAILABLE_DECODERS_LIST: list[type[Decoder]] = [TOMLDecoder, JSONDecoder]
 AVAILABLE_DECODERS = {decoder.name: decoder for decoder in AVAILABLE_DECODERS_LIST}
 
-USAGE = "Usage: budg [OPTIONS] COMMAND1 [ARGS]... [COMMAND2 [ARGS]...]..."
+USAGE = "Usage: budg [OPTIONS]"
 HELP = f"""{USAGE}
 
-  The Modern and Extensible Static Site Generator
+  A KISS Plugin Based Static Site Generator
 
 Options:
   --config [PATH]  Get configurations from a file or a python-funcion path.
@@ -26,12 +28,9 @@ Options:
 """
 
 
-def main(args: list[str] | None = None, stream: TextIO | None = None) -> ExitStatus:
+def main(args: list[str] | None = None) -> ExitStatus:
     if args is None:
         args = sys.argv[1:]
-
-    if stream is None:
-        stream = sys.stdout
 
     cwd = os.getcwd()
     if cwd not in sys.path:
@@ -59,24 +58,21 @@ def main(args: list[str] | None = None, stream: TextIO | None = None) -> ExitSta
     config_from = None
     config_format = None
     for opt, val in opts:
-        match opt:
-            case "--config":
-                config_from = val
-            case "--config-format":
-                val = val.lower()
-                if val not in AVAILABLE_DECODERS:
-                    fmts = ", ".join(map(repr, AVAILABLE_DECODERS))
-                    msg = "option --config-format={}: available formats are {}"
-                    return ExitFailureStatus(msg.format(val, fmts))
-                config_format = val
-            case "-h" | "--help":
-                stream.write(HELP)
-                return EXIT_SUCCESS
-            case "-V" | "--version":
-                stream.write(budg.version + "\n")
-                return EXIT_SUCCESS
-            case _:
-                pass
+        if opt == "--config":
+            config_from = val
+        elif opt == "--config-format":
+            val = val.lower()
+            if val not in AVAILABLE_DECODERS:
+                fmts = ", ".join(map(repr, AVAILABLE_DECODERS))
+                msg = "option --config-format={}: available formats are {}"
+                return ExitFailureStatus(msg.format(val, fmts))
+            config_format = val
+        elif opt in ("-h", "--help"):
+            print(end=HELP)
+            return EXIT_SUCCESS
+        elif opt in ("-v", "--version"):
+            print(budg.version)
+            return EXIT_SUCCESS
 
     try:
         config = load_config(
@@ -107,6 +103,10 @@ def main(args: list[str] | None = None, stream: TextIO | None = None) -> ExitSta
         except DataclassFromDictError as exc:
             msg = "{}: budg.rules[{}].options: {}"
             return ExitFailureStatus(msg.format(config.source, no, exc))
-        plugin.build(options)
+        try:
+            plugin.build(options)
+        except PluginError as exc:
+            msg = "{}: budg.rules[{}]: {}"
+            return ExitFailureStatus(msg.format(config.source, no, exc))
 
     return EXIT_SUCCESS

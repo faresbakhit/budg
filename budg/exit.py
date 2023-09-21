@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from enum import IntEnum
-from typing import Self, TypeAlias
+from typing import Union
 
 
 class ExitCode(IntEnum):
@@ -26,7 +28,7 @@ class ExitStatusBuilder:
 class ExitFailureStatus(str, ExitStatusBuilder):
     FAILURE_STATUS_PREFIX: str = "error: "
 
-    def __new__(cls, *values: object, sep: str | None = " ") -> Self:
+    def __new__(cls, *values: object, sep: str | None = " ") -> "ExitFailureStatus":
         if sep is None:
             sep = " "
         return super().__new__(cls, sep.join(map(str, values)))
@@ -44,5 +46,5 @@ class ExitStatusCode(int, ExitStatusBuilder):
         return f"ExitStatus(ExitCode.{ExitCode(int(self)).name})"
 
 
-ExitStatus: TypeAlias = ExitStatusCode | ExitFailureStatus
+ExitStatus = Union[ExitStatusCode, ExitFailureStatus]
 EXIT_SUCCESS = ExitStatusCode(ExitCode.SUCCESS)

@@ -3,7 +3,7 @@ from dataclasses import field
 from pathlib import Path
 
 from budg.config import config
-from budg.plugins import Plugin
+from budg.plugins import Plugin, PluginError
 
 
 @config
@@ -40,10 +40,13 @@ class CopierPlugin(Plugin[Config, Options]):
             contents = [directory.joinpath(name) for name in names]
             return [p.name for p in contents if p in ignores]
 
-        shutil.copytree(
-            options.directory,
-            options.destination,
-            ignore=ignore,
-            symlinks=options.symlinks_as_is,
-            dirs_exist_ok=options.exist_ok,
-        )
+        try:
+            shutil.copytree(
+                options.directory,
+                options.destination,
+                ignore=ignore,
+                symlinks=options.symlinks_as_is,
+                dirs_exist_ok=options.exist_ok,
+            )
+        except OSError as err:
+            raise PluginError(err)

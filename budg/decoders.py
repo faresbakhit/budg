@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
-from typing import Any, Protocol, TypeAlias, TypeVar
+from typing import Any, Protocol, TypeVar
 
 _T_co = TypeVar("_T_co", covariant=True)
 
@@ -10,7 +10,7 @@ class SupportsRead(Protocol[_T_co]):
         ...
 
 
-DecoderError: TypeAlias = ValueError
+DecoderError = ValueError
 
 
 class Decoder(ABC):

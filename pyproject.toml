@@ -4,46 +4,37 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "budg"
-description = "The Modern and Extensible Static Site Generator"
-readme = {file = "README.md", content-type = "text/markdown"}
-requires-python = ">=3.11"
-license = {file = "LICENSE"}
-authors = [{name = "Fares Ahmed", email = "faresa.bakhit@gmail.com"}]
-maintainers = [{name = "Fares Ahmed", email = "faresa.bakhit@gmail.com"}]
-dependencies = [
-    "dacite==1.8.1",
-]
+description = "A KISS Plugin Based Static Site Generator"
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.8"
+license = { file = "LICENSE" }
+authors = [{ name = "Fares Ahmed", email = "fares@duck.com" }]
+dependencies = ["dacite~=1.8"]
 dynamic = ["version"]
 
 [project.urls]
 Homepage = "https://faresbakhit.github.io/budg"
-Documentation = "https://faresbakhit.github.io/budg/docs"
-Repository = "https://github.com/faresbakhit/budg"
 
 [project.scripts]
 budg = "budg.main:main"
 
 [project.optional-dependencies]
-dev = [
-    "black==23.7.0",
-    "isort==5.12.0",
-    "mypy==1.5.0",
-]
+dev = ["black~=23.7", "isort~=5.12", "mypy~=1.5"]
 
 [tool.setuptools]
 packages = ["budg", "budg.plugins"]
 
 [tool.setuptools.dynamic]
-version = {attr = "budg.__version__"}
+version = { attr = "budg.__version__" }
 
 [tool.black]
-target-version = ["py311"]
+target-version = ["py38"]
 
 [tool.isort]
 profile = "black"
-py_version = "311"
+py_version = "38"
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.8"
 packages = ["budg"]
 strict = true

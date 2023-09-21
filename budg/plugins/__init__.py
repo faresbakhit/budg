@@ -29,3 +29,7 @@ class Plugin(ABC, Generic[_T_CONFIG, _T_OPTIONS]):
     @abstractmethod
     def build(self, options: _T_OPTIONS) -> None:
         ...
+
+
+class PluginError(Exception):
+    pass
