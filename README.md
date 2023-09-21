@@ -2,7 +2,7 @@
 
 A KISS Plugin Based Static Site Generator
 
-> Budg is 1.0! I consider Budg complete and no further improvements will be made to the project. In the case of a very unlikely security vulnerability, please read [SECURITY.md](/SECURITY.md).
+> Budg is 1.0! Budg is done and no further improvements will be made to the project. In the case of a security vulnerability, please read [SECURITY.md](/SECURITY.md).
 
 - [Extend Budg](#extend-budg)
 - [Installation](#installation)
